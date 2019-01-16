@@ -1,10 +1,10 @@
 {
-  "name": "record-player",
+  "name": "music-box",
   "version": "0.0.1",
-  "description": "A computer vision enabled record player",
+  "description": "A record player built on Google Vision and Raspberry Pi",
   "main": "server.js",
   "scripts": {
-    "start": "rm -r /app/public/images && mkdir /app/public/images && node server.js"
+    "start": "rm -r ./resources && mkdir ./resources && node server.js"
   },
   "dependencies": {
     "body-parser": "^1.18.2",
@@ -19,8 +19,4 @@
   "engines": {
     "node": "8.x"
   },
-  "repository": {
-    "url": "https://glitch.com/edit/#!/record-player"
-  },
-  "license": "MIT"
 }
