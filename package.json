@@ -2,21 +2,18 @@
   "name": "music-box",
   "version": "0.0.1",
   "description": "A record player built on Google Vision and Raspberry Pi",
-  "main": "server.js",
+  "main": "indexDev.js",
   "scripts": {
-    "start": "rm -r ./resources && mkdir ./resources && node server.js"
+    "start": "node indexDev.js"
   },
   "dependencies": {
-    "body-parser": "^1.18.2",
-    "cookie-parser": "^1.4.3",
+    "child_process": "^1.0.2",
     "express": "^4.16.4",
-    "hbs": "^4.0.1",
-    "multer": "^1.4.1",
     "request": "^2.34.0",
     "request-promise-native": "^1.0.5",
-    "uuid": "^3.3.2"
+    "mopidy": "^1.0.0"
   },
   "engines": {
     "node": "8.x"
-  },
+  }
 }

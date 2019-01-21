@@ -1,16 +1,23 @@
 var rp = require('request-promise-native');
+const Mopidy = require('mopidy');
+// var mopidy = new Mopidy({
+//     webSocketUrl: "ws://localhost:6680/mopidy/ws/",
+//     callingConvention: "by-position-or-by-name"
+// });
+const { exec } = require('child_process');
 
-const projectUrl = 'https://' + process.env.PROJECT_DOMAIN + '.glitch.me';
+// var Spotify = require ('spotify-web');
+
+// const projectUrl = 'https://' + process.env.PROJECT_DOMAIN + '.glitch.me';
 const googleVision = require('./googleVision');
-const spotify = require('./spotify');
+// const spotify = require('./spotify');
 const censoredWords = require('./censoredWords');
-
 
 // data is a variable that gets passed through the whole chain
 // imagePath is the url of the image on the server
 async function askGoogleVision(data, imagePath) {
   return new Promise(async function(resolve, reject) {
-    let gcpVisionOptions = await googleVision.getGcpOptions(projectUrl + imagePath);
+    let gcpVisionOptions = await googleVision.getGcpOptions(imagePath);
     let gvGuess = await rp(gcpVisionOptions);
     if (gvGuess) {
       data.gvGuess = gvGuess;
@@ -26,7 +33,7 @@ async function askGoogleVision(data, imagePath) {
 // censoredWords.js has a list of words that should be removed (like 'cd')
 function checkGoogleVisionGuess(data) {
   const gvGuess = data.gvGuess;
-  //console.log("Google Vision Guess: " + JSON.stringify(gvGuess));
+  // console.log("Google Vision Guess: " + JSON.stringify(gvGuess));
   let guess = gvGuess.responses[0].webDetection.bestGuessLabels[0].label;
   console.log("GV GUESS: " + guess);
   data.gvBestGuess = guess;
@@ -59,42 +66,60 @@ function checkGoogleVisionGuess(data) {
 // Then query spotify API using spotifyApiRequest.
 // It is a separate function because if the Spotify API returns 0
 // albums the app will ask it again with 1 fewer word.
-async function askSpotifyApi(spotifyToken, data) {
+
+async function playMopidy(data) {
   const safeGuessArray = data.safeArray;
-  let albumId = false;
-  let spotifyData = {};
   let splitSafeGuessArray = splitGuessAtHyphen(safeGuessArray);
-  for (var i = splitSafeGuessArray.length; i > 0; i--) {
-    spotifyData = await spotifyApiRequest(spotifyToken, splitSafeGuessArray.slice(0, i));
-    if (spotifyData.albums && spotifyData.albums.items && spotifyData.albums.items[0]) {
-      albumId = spotifyData.albums.items[0].id;
+  let safeGuess = splitSafeGuessArray.join(" ");
+  console.log('Now playing ' + safeGuess);
+  let command = `mpc clear; mpc search album "` + safeGuess + `" | mpc add; mpc play`;
+  console.log(command);
+  exec(command, (err, stdout, stderr) => {
+    if (err) {
+      console.error(`exec error: ${err}`);
+      return;
     }
-    if (albumId) {
-      break;
-    }
-  }
-  
-  if (!albumId) {
-    console.log('Spotify Error -- Out of words to guess');
-    throw('No items: ' + splitSafeGuessArray + '(' + safeGuessArray + ')');
-  }
-  data.albumId = albumId;
-  return data;
+    console.log(`${stdout}`);
+  });
 }
 
-// askSpotifyApi uses this funciton to actually query the API.
-async function spotifyApiRequest(spotifyToken, splitSafeGuessArray) {
-  let safeGuess = splitSafeGuessArray.join(" ");
-  let spotifyQueryOptions = spotify.queryOptions(spotifyToken, safeGuess);
-  let spotifyData = await rp(spotifyQueryOptions);
-  if (spotifyData.albums.items.length === 0) {
-    console.log("No Items");
-    return false;
-  } else {
-    //console.log("Spotify Response :" + JSON.stringify(spotifyData));
-    return spotifyData;
-  }
-}
+// async function askMopidy(data) {
+//   const safeGuessArray = data.safeArray;
+//   let albumId = false;
+//   let spotifyData = {};
+//   let splitSafeGuessArray = splitGuessAtHyphen(safeGuessArray);
+//   for (var i = splitSafeGuessArray.length; i > 0; i--) {
+//     spotifyData = await mopidyRequest(splitSafeGuessArray.slice(0, i));
+//     if (spotifyData.albums && spotifyData.albums.items && spotifyData.albums.items[0]) {
+//       albumId = spotifyData.albums.items[0].id;
+//     }
+//     if (albumId) {
+//       break;
+//     }
+//   }
+  
+//   if (!albumId) {
+//     console.log('Spotify Error -- Out of words to guess');
+//     throw('No items: ' + splitSafeGuessArray + '(' + safeGuessArray + ')');
+//   }
+//   data.albumId = albumId;
+//   return data;
+// }
+
+// askSpotifyApi uses this function to actually query the API.
+// async function mopidyRequest(splitSafeGuessArray) {
+//   let safeGuess = splitSafeGuessArray.join(" ");
+//   console.log("Searching in Mopidy: " + safeGuess);
+//   let spotifyQueryOptions = mopidy.library.search({'album':[safeGuess]});
+//   let spotifyData = await rp(spotifyQueryOptions);
+//   if (spotifyData.albums.items.length === 0) {
+//     console.log("No Items");
+//     return false;
+//   } else {
+//     //console.log("Spotify Response :" + JSON.stringify(spotifyData));
+//     return spotifyData;
+//   }
+// }
 
 // This function throws away everything before a hyphen (-) character
 // from the Google Vision guess. This is because on a few example
@@ -111,24 +136,23 @@ function splitGuessAtHyphen(safeGuessArray) {
   return splitArray;
 }
 
-
-function apiChain(imagePath, req, res) {
-  //console.log("Image Path: " + imagePath);
+function apiChain(imagePath) {
+  console.log("apiChain started");
   let data = {};
   
   return askGoogleVision(data, imagePath)
   .then(checkGoogleVisionGuess)
-  .then(askSpotifyApi.bind(null, req.cookies.spotifyAccessToken))
-  .then((data) => {
-    data.error = false;
-    return data;
-  })
-  .catch(function (err) {
-    console.log(err);
-    data.error = true;
-    data.errorMessage = err;
-    return data;
-  });
+  .then(playMopidy.bind(data))
+  // .then((data) => {
+  //   data.error = false;
+  //   return data;
+  // })
+  // .catch(function (err) {
+  //   console.log(err);
+  //   data.error = true;
+  //   data.errorMessage = err;
+  //   return data;
+  // });
 }
 
 module.exports = apiChain;
