@@ -3,11 +3,12 @@ const apiChain = require('./apiChain');
 
 var imagePath = './resources/photo.jpg';
 console.log('IndexDev starting');
+const { exec } = require('child_process');
 
-var testResults = googleVisionTest(imagePath);
-console.log('Performed googleVisionTest');
+return apiChain(imagePath)
+.then(playMopidy)
 
-async function googleVisionTest(imagePath) {
+async function getAlbumData(imagePath) {
   console.log('Performing googleVisionTest');
   // if (fs.existsSync(imagePath)) {
   //   console.log('File exists');
@@ -37,7 +38,8 @@ async function googleVisionTest(imagePath) {
       //   googleVisionGuess: apiResponse.gvBestGuess,
       //   embed: spotify.embed[0] + apiResponse.albumId + spotify.embed[1] 
       // });
-      console.log('The album ID is ' + apiResponse.albumId);
+      console.log('Now playing Mopidy');
+      var play = playMopidy(apiResponse.albumId);
     // }
   } else {
     // if (req.body.async) {
@@ -49,15 +51,32 @@ async function googleVisionTest(imagePath) {
       console.log('Error: ' + apiResponse.errorMessage);
     // }
   }
-
-  // if (imagePath) {
-  //   try {
-  //     fs.unlinkSync('/app/public' + imagePath);
-  //   } catch (err) {
-  //     console.log('error deleting ' + imagePath + ': ' + err);
-  //   }
-  // }
 }
+
+async function playMopidy(data) {
+  var albumId = data.albumId;
+  // console.log('Now playing ' + albumId.safeGuess);
+  let command = `mpc add spotify:album:` + albumId + `; mpc play`;
+  console.log(command);
+  exec(command, (err, stdout, stderr) => {
+    if (err) {
+      console.error(`exec error: ${err}`);
+      return;
+    }
+    console.log(`${stdout}`);
+  });
+}
+
+//   // if (imagePath) {
+//   //   try {
+//   //     fs.unlinkSync('/app/public' + imagePath);
+//   //   } catch (err) {
+//   //     console.log('error deleting ' + imagePath + ': ' + err);
+//   //   }
+//   // }
+// }
+
+
 
   // var apiResponse;
   // var imagePath = false;
