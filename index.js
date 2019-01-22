@@ -1,41 +1,111 @@
 const fs = require('fs');
-const child_process = require('child_process');
-// const PiCamera = require('pi-camera');
-// const myCamera = new PiCamera({
-//   mode: 'photo',
-//   output: `${ __dirname }/resources/photo.jpg`,
-//   width: 640,
-//   height: 480,
-//   nopreview: true,
-// });
 const apiChain = require('./apiChain');
+const Raspistill = require('node-raspistill').Raspistill;
+const camera = new Raspistill({
+  fileName: 'photo',
+  encoding: 'jpg',
+  outputDir: './resources'
+});
+var imagePath = './resources/photo.jpg';
+console.log('Index starting');
+const { exec } = require('child_process');
 
 var Gpio = require('onoff').Gpio; //include onoff to interact with the GPIO
-var pushButton = new Gpio(17, 'in', 'both'); //use GPIO pin 17 as input, and 'both' button 
-var impagePath = '${ __dirname }/resources/photo.jpg'
+var button = new Gpio(17, 'in','rising', {debounceTimeout: 10}); //use GPIO pin 17 as input, and 'both' button 
 
-//snaps a pic and saves it when the button is pressed
-pushButton.watch(function (err, value) { //Watch for hardware interrupts on pushButton GPIO, specify callback function
-  if (err) { //if an error
-    console.error('There was an error', err); //output error message to console
-  return;
+button.watch((err, value) => {
+  if (err) {
+    throw err;
   }
 
-  let filename = 'photo.jpg';
-  let args = ['-w', '640', '-h', '480', '-o', filename, '-t', '1'];
-  let spawn = child_process.spawn('raspistill', args);
+  console.log('Button Pressed');
 
-  // check to see that a photo file exists
-  
+  camera.takePhoto()
+    .then((photo) => {
+      console.log('took photo', photo);
+      var fileName = 'photo' + Date.now() + '.jpg';
+      var uploadCommand = './dropbox_uploader.sh upload ./resources/photo.jpg ./Player_Photos/' + fileName;
+      exec(uploadCommand, (err, stdout, stderr) => {
+        if (err) {
+          console.error(`exec error: ${err}`);
+          return;
+        }
+        console.log(`${stdout}`);
+      });
+      return apiChain(imagePath)
+      .then(playMopidy)
+    })
+});
 
+
+async function getAlbumData(imagePath) {
+  console.log('Performing googleVisionTest');
+  // if (fs.existsSync(imagePath)) {
+  //   console.log('File exists');
   try {
-    if (fs.existsSync(imagePath)) {
-      apiResponse = await apiChain(imagePath, req, res);
-      console.log(apiResponse);
+    apiResponse = await apiChain(imagePath);
+    console.log('The album ID is ' + apiResponse.albumId);
+  } catch(e) {
+    apiResponse = {
+      error: true,
+      errorMessage: "API requests failed."
     }
-	  } catch(err) {
-	    console.error(err)
+  // } catch(err) {
+  // console.log('File does not exist');
+  // console.error(err)
   }
+
+  if (!apiResponse.error) {
+      // if (req.body.async) {
+      //   res.json({
+      //     error: false,
+      //     googleVisionGuess: apiResponse.gvBestGuess,
+      //     albumId: apiResponse.albumId
+      //   });
+      //   console.log('The album ID is ' + apiResponse.albumId);
+      // } else {
+      // res.render('player', {
+      //   googleVisionGuess: apiResponse.gvBestGuess,
+      //   embed: spotify.embed[0] + apiResponse.albumId + spotify.embed[1] 
+      // });
+      console.log('Now playing Mopidy');
+      var play = playMopidy(apiResponse.albumId);
+    // }
+  } else {
+    // if (req.body.async) {
+    //   res.json({
+    //     error: true,
+    //     errorMessage: apiResponse.errorMessage
+    //   });
+    // } else {
+      console.log('Error: ' + apiResponse.errorMessage);
+    // }
+  }
+}
+
+async function playMopidy(data) {
+  var albumId = data.albumId;
+  // console.log('Now playing ' + albumId.safeGuess);
+  let command = `mpc clear; mpc add spotify:album:` + albumId + `; mpc play`;
+  console.log(command);
+  exec(command, (err, stdout, stderr) => {
+    if (err) {
+      console.error(`exec error: ${err}`);
+      return;
+    }
+    console.log(`${stdout}`);
+  });
+}
+
+//   // if (imagePath) {
+//   //   try {
+//   //     fs.unlinkSync('/app/public' + imagePath);
+//   //   } catch (err) {
+//   //     console.log('error deleting ' + imagePath + ': ' + err);
+//   //   }
+//   // }
+// }
+
 
 
   // var apiResponse;
@@ -56,40 +126,41 @@ pushButton.watch(function (err, value) { //Watch for hardware interrupts on push
   //   }
   // }
   
-  if (!apiResponse.error) {
-    if (req.body.async) {
-      res.json({
-        error: false,
-        googleVisionGuess: apiResponse.gvBestGuess,
-        albumId: apiResponse.albumId
-      });
-    } else {
-      res.render('player', {
-        googleVisionGuess: apiResponse.gvBestGuess,
-        embed: spotify.embed[0] + apiResponse.albumId + spotify.embed[1] 
-      });
-    }
-  } else {
-    if (req.body.async) {
-      res.json({
-        error: true,
-        errorMessage: apiResponse.errorMessage
-      });
-    } else {
-      handleError(res, "Error: " + apiResponse.errorMessage);
-    }
-  }
-  if (imagePath) {
-    try {
-      fs.unlinkSync('/app/public' + imagePath);
-    } catch (err) {
-      console.log('error deleting ' + imagePath + ': ' + err);
-    }
-  }
-});
+  // if (!apiResponse.error) {
+  //   if (req.body.async) {
+  //     res.json({
+  //       error: false,
+  //       googleVisionGuess: apiResponse.gvBestGuess,
+  //       albumId: apiResponse.albumId
+  //     });
+  //   } else {
+  //     res.render('player', {
+  //       googleVisionGuess: apiResponse.gvBestGuess,
+  //       embed: spotify.embed[0] + apiResponse.albumId + spotify.embed[1] 
+  //     });
+  //   }
+  // } else {
+  //   if (req.body.async) {
+  //     res.json({
+  //       error: true,
+  //       errorMessage: apiResponse.errorMessage
+  //     });
+  //   } else {
+  //     handleError(res, "Error: " + apiResponse.errorMessage);
+  //   }
+  // }
+  // if (imagePath) {
+  //   try {
+  //     fs.unlinkSync('/app/public' + imagePath);
+  //   } catch (err) {
+  //     console.log('error deleting ' + imagePath + ': ' + err);
+  //   }
+  // }
+// });
 
-function handleError(res, err) {
-  console.log("\nError");
-  console.log(JSON.stringify(err));
-  res.redirect('/error');
-}
+// function handleError(res, err) {
+//   console.log("\nError");
+//   console.log(JSON.stringify(err));
+//   res.redirect('/error');
+// }
+
