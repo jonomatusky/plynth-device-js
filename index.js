@@ -4,7 +4,10 @@ const Raspistill = require('node-raspistill').Raspistill;
 const camera = new Raspistill({
   fileName: 'photo',
   encoding: 'jpg',
-  outputDir: './resources'
+  outputDir: './resources',
+  width: 1000,
+  height: 750,
+  time: 10
 });
 var imagePath = './resources/photo.jpg';
 console.log('Index starting');
@@ -20,9 +23,19 @@ button.watch((err, value) => {
 
   console.log('Button Pressed');
 
+  let stopCommand = `mpc stop`;
+  console.log(stopCommand);
+  exec(stopCommand, (err, stdout, stderr) => {
+    if (err) {
+      console.error(`exec error: ${err}`);
+      return;
+    }
+    console.log(`${stdout}`);
+  });
+
   camera.takePhoto()
     .then((photo) => {
-      console.log('took photo', photo);
+      console.log('took photo');
       var fileName = 'photo' + Date.now() + '.jpg';
       var uploadCommand = './dropbox_uploader.sh upload ./resources/photo.jpg ./Player_Photos/' + fileName;
       exec(uploadCommand, (err, stdout, stderr) => {
