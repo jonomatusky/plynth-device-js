@@ -18,7 +18,7 @@ async function getGcpOptions(file) {
   var bitmap = fs.readFileSync(file);
   var imageData = Buffer(bitmap).toString('base64');
 
-  console.log('Google Vision API Key: ' + GCP_API_KEY);
+  // console.log('Google Vision API Key: ' + GCP_API_KEY);
   
   return {
     method: 'POST',

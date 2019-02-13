@@ -99,8 +99,8 @@ async function askSpotifyApi(data) {
 async function spotifyApiRequest(splitSafeGuessArray) {
   let safeGuess = splitSafeGuessArray.join(" ");
   console.log('Now querying Spotify for: ' + safeGuess);
-  console.log('Asking for Token');
-  console.log('Client ID: ' + SPOTIFY_CLIENT_ID);
+  // console.log('Asking for Token');
+  // console.log('Client ID: ' + SPOTIFY_CLIENT_ID);
   // request.post(authOptions, function(error, response, body) {
   //   if (!error && response.statusCode === 200) {
   //     console.log('Spotify Token Received');
@@ -126,7 +126,7 @@ async function spotifyApiRequest(splitSafeGuessArray) {
 
   let tokenData = await rp(tokenOptions);
   let spotifyToken = await tokenData.access_token;
-  console.log('Spotify Token is ' + spotifyToken);
+  // console.log('Spotify Token is ' + spotifyToken);
   let spotifyQueryOptions = await spotify.queryOptions(spotifyToken, safeGuess);
   let spotifyData = await rp(spotifyQueryOptions);
   if (spotifyData.albums.items.length === 0) {
@@ -154,7 +154,7 @@ function splitGuessAtHyphen(safeGuessArray) {
 }
 
 function apiChain(imagePath) {
-  console.log("apiChain started");
+  // console.log("apiChain started");
   let data = {};
   
   return askGoogleVision(data, imagePath)

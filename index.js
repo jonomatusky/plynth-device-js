@@ -10,7 +10,7 @@ const camera = new Raspistill({
   time: 10
 });
 var imagePath = './resources/photo.jpg';
-console.log('Index starting');
+// console.log('Index starting');
 const { exec } = require('child_process');
 
 var Gpio = require('onoff').Gpio; //include onoff to interact with the GPIO
@@ -24,18 +24,18 @@ button.watch((err, value) => {
   console.log('Button Pressed');
 
   let stopCommand = `mpc stop`;
-  console.log(stopCommand);
+  // console.log(stopCommand);
   exec(stopCommand, (err, stdout, stderr) => {
     if (err) {
       console.error(`exec error: ${err}`);
       return;
     }
-    console.log(`${stdout}`);
+    // console.log(`${stdout}`);
   });
 
   camera.takePhoto()
     .then((photo) => {
-      console.log('took photo');
+      console.log('Photo Captured');
       var fileName = 'photo' + Date.now() + '.jpg';
       var uploadCommand = './dropbox_uploader.sh upload ./resources/photo.jpg ./Player_Photos/' + fileName;
       exec(uploadCommand, (err, stdout, stderr) => {
@@ -43,7 +43,7 @@ button.watch((err, value) => {
           console.error(`exec error: ${err}`);
           return;
         }
-        console.log(`${stdout}`);
+        // console.log(`${stdout}`);
       });
       return apiChain(imagePath)
       .then(playMopidy)
@@ -52,7 +52,7 @@ button.watch((err, value) => {
 
 
 async function getAlbumData(imagePath) {
-  console.log('Performing googleVisionTest');
+  // console.log('Performing googleVisionTest');
   // if (fs.existsSync(imagePath)) {
   //   console.log('File exists');
   try {
@@ -81,7 +81,7 @@ async function getAlbumData(imagePath) {
       //   googleVisionGuess: apiResponse.gvBestGuess,
       //   embed: spotify.embed[0] + apiResponse.albumId + spotify.embed[1] 
       // });
-      console.log('Now playing Mopidy');
+      // console.log('Now playing Mopidy');
       var play = playMopidy(apiResponse.albumId);
     // }
   } else {
@@ -99,14 +99,14 @@ async function getAlbumData(imagePath) {
 async function playMopidy(data) {
   var albumId = data.albumId;
   // console.log('Now playing ' + albumId.safeGuess);
-  let command = `mpc clear; mpc add spotify:album:` + albumId + `; mpc play`;
-  console.log(command);
+  // let command = `mpc clear; mpc add spotify:album:` + albumId + `; mpc play`;
+  // console.log(command);
   exec(command, (err, stdout, stderr) => {
     if (err) {
       console.error(`exec error: ${err}`);
       return;
     }
-    console.log(`${stdout}`);
+    // console.log(`${stdout}`);
   });
 }
 
