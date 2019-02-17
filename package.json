@@ -2,9 +2,9 @@
   "name": "music-box",
   "version": "0.0.1",
   "description": "A record player built on Google Vision and Raspberry Pi",
-  "main": "indexDev.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node indexDev.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "child_process": "^1.0.2",

@@ -21,6 +21,7 @@ const censoredWords = require('./censoredWords');
 // imagePath is the url of the image on the server
 async function askGoogleVision(data, imagePath) {
   return new Promise(async function(resolve, reject) {
+    console.log("Asking Google Vision");
     let gcpVisionOptions = await googleVision.getGcpOptions(imagePath);
     let gvGuess = await rp(gcpVisionOptions);
     if (gvGuess) {
@@ -37,9 +38,9 @@ async function askGoogleVision(data, imagePath) {
 // censoredWords.js has a list of words that should be removed (like 'cd')
 function checkGoogleVisionGuess(data) {
   const gvGuess = data.gvGuess;
-  console.log("Google Vision Guess: " + JSON.stringify(gvGuess));
+  // console.log("Google Vision Guess: " + JSON.stringify(gvGuess));
   let guess = gvGuess.responses[0].webDetection.bestGuessLabels[0].label;
-  console.log("GV GUESS: " + guess);
+  console.log("Google Vision Guess: " + guess);
   data.gvBestGuess = guess;
 
   if (!guess) {
