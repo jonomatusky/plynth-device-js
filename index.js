@@ -63,7 +63,7 @@ button.watch((err, value) => {
     .then((photo) => {
       console.log('Photo Captured');
       var fileName = 'photo' + Date.now() + '.jpg';
-      var uploadCommand = './dropbox_uploader.sh upload ./resources/photo.jpg ./Player_Photos/' + fileName;
+      var uploadCommand = './music-box/dropbox_uploader.sh upload ./resources/photo.jpg ./Player_Photos/' + fileName;
       exec(uploadCommand, (err, stdout, stderr) => {
         if (err) {
           console.error(`exec error: ${err}`);
