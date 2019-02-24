@@ -41,6 +41,15 @@ function LEDGreen() { //function to stop blinking
 
 LEDOff();
 
+var testCameraCommand = 'sudo raspistill -o photo.jpg';
+exec(testCameraCommand, (err, stdout, stderr) => {
+  if (err) {
+    console.error(`exec error: ${err}`);
+    return;
+  }
+  // console.log(`${stdout}`);
+});
+
 button.watch((err, value) => {
   if (err) {
     throw err;
