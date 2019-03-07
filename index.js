@@ -7,47 +7,30 @@ const camera = new Raspistill({
   outputDir: './resources',
   width: 1000,
   height: 750,
-  time: 10
+  time: 1000
 });
-var imagePath = './resources/photo.jpg';
-// console.log('Index starting');
 const { exec } = require('child_process');
 
+var stopCommand = `sudo shutdown -h now`;
+var imagePath = './resources/photo.jpg';
+
 var Gpio = require('onoff').Gpio; //include onoff to interact with the GPIO
-var button = new Gpio(17, 'in','rising', {debounceTimeout: 10}); //use GPIO pin 17 as input, and 'both' button 
-var stopButton = new Gpio(4, 'in', 'rising');
+var button = new Gpio(17, 'in','rising', {debounceTimeout: 10}); //use GPIO pin 17 as input
+var stopButton = new Gpio(4, 'in', 'rising'); //use GPIO 4 as off
 
-var redLED = new Gpio(14, 'out'); //use GPIO pin 4, and specify that it is output
-var greenLED = new Gpio(15, 'out'); //use GPIO pin 4, and specify that it is output
-var blueLED = new Gpio(18, 'out'); //use GPIO pin 4, and specify that it is output
+//variables for multicolor LED
+var redLED = new Gpio(14, 'out'); //use GPIO pin 14, and specify that it is output
+var greenLED = new Gpio(15, 'out'); //use GPIO pin 15, and specify that it is output
+var blueLED = new Gpio(18, 'out'); //use GPIO pin 18, and specify that it is output
 
-function LEDOn() { //function to stop blinking
-  redLED.writeSync(1); //set pin state to 1 (turn LED on)
-  greenLED.writeSync(1); //set pin state to 1 (turn LED on)
-  blueLED.writeSync(1); //set pin state to 1 (turn LED on)
-}
+LEDOff(); //turn LED off at program start
 
-function LEDOff() { //function to stop blinking
-  redLED.writeSync(0); //set pin state to 1 (turn LED on)
-  greenLED.writeSync(0); //set pin state to 1 (turn LED on)
-  blueLED.writeSync(0); //set pin state to 1 (turn LED on)
-}
-
-function LEDGreen() { //function to stop blinking
-  redLED.writeSync(0); //set pin state to 1 (turn LED on)
-  greenLED.writeSync(1); //set pin state to 1 (turn LED on)
-  blueLED.writeSync(0); //set pin state to 1 (turn LED on)
-}
-
-LEDOff();
-
-var testCameraCommand = 'sudo raspistill -o photo.jpg';
+var testCameraCommand = 'sudo raspistill -t 1000 -o photo.jpg'; //had problems with later commands, this makes sure camera os working
 exec(testCameraCommand, (err, stdout, stderr) => {
   if (err) {
     console.error(`exec error: ${err}`);
     return;
   }
-  // console.log(`${stdout}`);
 });
 
 button.watch((err, value) => {
@@ -56,18 +39,16 @@ button.watch((err, value) => {
   }
 
   console.log('Button Pressed');
-  LEDGreen();
+  LEDGreen(); //changes color to green
 
-  let stopCommand = `mpc stop`;
-  // console.log(stopCommand);
   exec(stopCommand, (err, stdout, stderr) => {
     if (err) {
       console.error(`exec error: ${err}`);
       return;
     }
-    // console.log(`${stdout}`);
   });
 
+  //this is the bulk of the program
   camera.takePhoto()
     .then((photo) => {
       console.log('Photo Captured');
@@ -78,7 +59,6 @@ button.watch((err, value) => {
           console.error(`exec error: ${err}`);
           return;
         }
-        // console.log(`${stdout}`);
       });
       return apiChain(imagePath)
       .then(playMopidy)
@@ -92,22 +72,33 @@ stopButton.watch((err, value) => {
 
   console.log('Shutting Down');
 
-  let stopCommand = `sudo shutdown -h now`;
-  // console.log(stopCommand);
   exec(stopCommand, (err, stdout, stderr) => {
     if (err) {
       console.error(`exec error: ${err}`);
       return;
     }
-    // console.log(`${stdout}`);
   });
 });
 
+function LEDOn() { 
+  redLED.writeSync(1);
+  greenLED.writeSync(1); 
+  blueLED.writeSync(1);
+}
+
+function LEDOff() {
+  redLED.writeSync(0);
+  greenLED.writeSync(0);
+  blueLED.writeSync(0);
+}
+
+function LEDGreen() {
+  redLED.writeSync(0);
+  greenLED.writeSync(1);
+  blueLED.writeSync(0);
+}
 
 async function getAlbumData(imagePath) {
-  // console.log('Performing googleVisionTest');
-  // if (fs.existsSync(imagePath)) {
-  //   console.log('File exists');
   try {
     apiResponse = await apiChain(imagePath);
     console.log('The album ID is ' + apiResponse.albumId);
@@ -116,36 +107,12 @@ async function getAlbumData(imagePath) {
       error: true,
       errorMessage: "API requests failed."
     }
-  // } catch(err) {
-  // console.log('File does not exist');
-  // console.error(err)
   }
 
   if (!apiResponse.error) {
-      // if (req.body.async) {
-      //   res.json({
-      //     error: false,
-      //     googleVisionGuess: apiResponse.gvBestGuess,
-      //     albumId: apiResponse.albumId
-      //   });
-      //   console.log('The album ID is ' + apiResponse.albumId);
-      // } else {
-      // res.render('player', {
-      //   googleVisionGuess: apiResponse.gvBestGuess,
-      //   embed: spotify.embed[0] + apiResponse.albumId + spotify.embed[1] 
-      // });
-      // console.log('Now playing Mopidy');
-      var play = playMopidy(apiResponse.albumId);
-    // }
+    var play = playMopidy(apiResponse.albumId);
   } else {
-    // if (req.body.async) {
-    //   res.json({
-    //     error: true,
-    //     errorMessage: apiResponse.errorMessage
-    //   });
-    // } else {
-      console.log('Error: ' + apiResponse.errorMessage);
-    // }
+    console.log('Error: ' + apiResponse.errorMessage);
   }
 }
 
@@ -160,74 +127,5 @@ async function playMopidy(data) {
       console.error(`exec error: ${err}`);
       return;
     }
-    // console.log(`${stdout}`);
   });
 }
-
-//   // if (imagePath) {
-//   //   try {
-//   //     fs.unlinkSync('/app/public' + imagePath);
-//   //   } catch (err) {
-//   //     console.log('error deleting ' + imagePath + ': ' + err);
-//   //   }
-//   // }
-// }
-
-
-
-  // var apiResponse;
-  // var imagePath = false;
-  // if (req.file && req.file.filename) {
-  //   imagePath = './resources/photo.jpg';
-  // } else {
-  // }
-    
-  // if (imagePath) {
-  //   try {
-  //     apiResponse = await apiChain(imagePath, req, res);
-  //   } catch(e) {
-  //     apiResponse = {
-  //       error: true,
-  //       errorMessage: "API requests failed."
-  //     }
-  //   }
-  // }
-  
-  // if (!apiResponse.error) {
-  //   if (req.body.async) {
-  //     res.json({
-  //       error: false,
-  //       googleVisionGuess: apiResponse.gvBestGuess,
-  //       albumId: apiResponse.albumId
-  //     });
-  //   } else {
-  //     res.render('player', {
-  //       googleVisionGuess: apiResponse.gvBestGuess,
-  //       embed: spotify.embed[0] + apiResponse.albumId + spotify.embed[1] 
-  //     });
-  //   }
-  // } else {
-  //   if (req.body.async) {
-  //     res.json({
-  //       error: true,
-  //       errorMessage: apiResponse.errorMessage
-  //     });
-  //   } else {
-  //     handleError(res, "Error: " + apiResponse.errorMessage);
-  //   }
-  // }
-  // if (imagePath) {
-  //   try {
-  //     fs.unlinkSync('/app/public' + imagePath);
-  //   } catch (err) {
-  //     console.log('error deleting ' + imagePath + ': ' + err);
-  //   }
-  // }
-// });
-
-// function handleError(res, err) {
-//   console.log("\nError");
-//   console.log(JSON.stringify(err));
-//   res.redirect('/error');
-// }
-

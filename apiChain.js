@@ -1,21 +1,12 @@
 var rp = require('request-promise-native');
-const Mopidy = require('mopidy');
-// var mopidy = new Mopidy({
-//     webSocketUrl: "ws://localhost:6680/mopidy/ws/",
-//     callingConvention: "by-position-or-by-name"
-// });
+
 const { exec } = require('child_process');
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 
-// var Spotify = require ('spotify-web');
-
-// const projectUrl = 'https://' + process.env.PROJECT_DOMAIN + '.glitch.me';
 const googleVision = require('./googleVision');
 const spotify = require('./spotify');
 const censoredWords = require('./censoredWords');
-
-// let spotifyToken = await spotify.getToken();
 
 // data is a variable that gets passed through the whole chain
 // imagePath is the url of the image on the server
@@ -78,7 +69,6 @@ async function askSpotifyApi(data) {
   let splitSafeGuessArray = splitGuessAtHyphen(safeGuessArray);
   for (var i = splitSafeGuessArray.length; i > 0; i--) {
     spotifyData = await spotifyApiRequest(splitSafeGuessArray.slice(0, i));
-    // console.log(spotifyData);
     if (spotifyData.albums && spotifyData.albums.items && spotifyData.albums.items[0]) {
       albumId = spotifyData.albums.items[0].id;
       console.log('Album found, Album ID is: ' + albumId);
@@ -100,17 +90,7 @@ async function askSpotifyApi(data) {
 async function spotifyApiRequest(splitSafeGuessArray) {
   let safeGuess = splitSafeGuessArray.join(" ");
   console.log('Now querying Spotify for: ' + safeGuess);
-  // console.log('Asking for Token');
-  // console.log('Client ID: ' + SPOTIFY_CLIENT_ID);
-  // request.post(authOptions, function(error, response, body) {
-  //   if (!error && response.statusCode === 200) {
-  //     console.log('Spotify Token Received');
-  //     var spotifyToken = body.access_token;
-  //     // use the access token to access the Spotify Web API
-  //     console.log('Token: ' + spotifyToken);
-  //     return spotifyToken;
-  //   }
-  // });
+
   var base64String = Buffer(SPOTIFY_CLIENT_ID + ':' + SPOTIFY_CLIENT_SECRET).toString('base64');
   
   var tokenOptions = {
@@ -127,14 +107,12 @@ async function spotifyApiRequest(splitSafeGuessArray) {
 
   let tokenData = await rp(tokenOptions);
   let spotifyToken = await tokenData.access_token;
-  // console.log('Spotify Token is ' + spotifyToken);
   let spotifyQueryOptions = await spotify.queryOptions(spotifyToken, safeGuess);
   let spotifyData = await rp(spotifyQueryOptions);
   if (spotifyData.albums.items.length === 0) {
     console.log("No Items");
     return false;
   } else {
-    // console.log("Spotify Response :" + JSON.stringify(spotifyData));
     return spotifyData;
   }
 }
@@ -155,7 +133,6 @@ function splitGuessAtHyphen(safeGuessArray) {
 }
 
 function apiChain(imagePath) {
-  // console.log("apiChain started");
   let data = {};
   
   return askGoogleVision(data, imagePath)
@@ -171,16 +148,6 @@ function apiChain(imagePath) {
     data.errorMessage = err;
     return data;
   });
-  // .then((data) => {
-  //   data.error = false;
-  //   return data;
-  // })
-  // .catch(function (err) {
-  //   console.log(err);
-  //   data.error = true;
-  //   data.errorMessage = err;
-  //   return data;
-  // });
 }
 
 module.exports = apiChain;

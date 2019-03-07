@@ -14,7 +14,6 @@ const censoredWords = [
   '[german import]'
 ];
 
-
 // This isn't used right now
 // But maybe it's a good idea to ignore years because
 // The google vision API was including release years a lot
