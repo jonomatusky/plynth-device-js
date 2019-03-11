@@ -7,25 +7,28 @@ const camera = new Raspistill({
   outputDir: './resources',
   width: 1000,
   height: 750,
-  time: 1000
+  time: 2000
 });
 const { exec } = require('child_process');
 
-var stopCommand = `sudo shutdown -h now`;
+var stopCommand = `mpc stop`;
+var offCommand = `sudo shutdown -h now`;
 var imagePath = './resources/photo.jpg';
 
 var Gpio = require('onoff').Gpio; //include onoff to interact with the GPIO
-var button = new Gpio(17, 'in','rising', {debounceTimeout: 10}); //use GPIO pin 17 as input
-var stopButton = new Gpio(4, 'in', 'rising'); //use GPIO 4 as off
+var button = new Gpio(16, 'in','both', {debounceTimeout: 10}); //use GPIO pin 17 as input
+var offButton = new Gpio(3, 'in', 'falling'); //use GPIO 3 as off
 
 //variables for multicolor LED
-var redLED = new Gpio(14, 'out'); //use GPIO pin 14, and specify that it is output
-var greenLED = new Gpio(15, 'out'); //use GPIO pin 15, and specify that it is output
-var blueLED = new Gpio(18, 'out'); //use GPIO pin 18, and specify that it is output
+var redLED = new Gpio(17, 'out'); //use GPIO pin 14, and specify that it is output
+var greenLED = new Gpio(27, 'out'); //use GPIO pin 15, and specify that it is output
+var blueLED = new Gpio(22, 'out'); //use GPIO pin 18, and specify that it is output
 
 LEDOff(); //turn LED off at program start
+console.log('Running')
 
-var testCameraCommand = 'sudo raspistill -t 1000 -o photo.jpg'; //had problems with later commands, this makes sure camera os working
+//had problems with later commands, this makes sure camera os working
+var testCameraCommand = 'sudo raspistill -t 1000 -o photo.jpg -ex auto'; 
 exec(testCameraCommand, (err, stdout, stderr) => {
   if (err) {
     console.error(`exec error: ${err}`);
@@ -36,24 +39,15 @@ exec(testCameraCommand, (err, stdout, stderr) => {
 button.watch((err, value) => {
   if (err) {
     throw err;
-  }
-
-  console.log('Button Pressed');
-  LEDGreen(); //changes color to green
-
-  exec(stopCommand, (err, stdout, stderr) => {
-    if (err) {
-      console.error(`exec error: ${err}`);
-      return;
-    }
-  });
-
-  //this is the bulk of the program
-  camera.takePhoto()
+  } 
+  if (value === 1) { 
+    console.log('Album On');
+    LEDGreen(); //changes color to green
+    camera.takePhoto()
     .then((photo) => {
       console.log('Photo Captured');
       var fileName = 'photo' + Date.now() + '.jpg';
-      var uploadCommand = './music-box/dropbox_uploader.sh upload ./resources/photo.jpg ./Player_Photos/' + fileName;
+      var uploadCommand = '../Dropbox-Uploader/dropbox_uploader.sh upload ./resources/photo.jpg ./Plynth/Plynthv1-2' + fileName;
       exec(uploadCommand, (err, stdout, stderr) => {
         if (err) {
           console.error(`exec error: ${err}`);
@@ -63,16 +57,26 @@ button.watch((err, value) => {
       return apiChain(imagePath)
       .then(playMopidy)
     })
+  } else {
+    console.log('Album Off');
+    exec(stopCommand, (err, stdout, stderr) => {
+      if (err) {
+        console.error(`exec error: ${err}`);
+        return;
+      }
+    });
+    LEDOff();
+  }
 });
 
-stopButton.watch((err, value) => {
+offButton.watch((err, value) => {
   if (err) {
     throw err;
   }
 
   console.log('Shutting Down');
 
-  exec(stopCommand, (err, stdout, stderr) => {
+  exec(offCommand, (err, stdout, stderr) => {
     if (err) {
       console.error(`exec error: ${err}`);
       return;
