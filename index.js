@@ -1,6 +1,7 @@
 const fs = require('fs');
 const apiChain = require('./apiChain');
 const Raspistill = require('node-raspistill').Raspistill;
+const musicbox = require('./musicbox')
 const camera = new Raspistill({
   fileName: 'photo',
   encoding: 'jpg',
@@ -27,7 +28,7 @@ var blueLED = new Gpio(22, 'out'); //use GPIO pin 18, and specify that it is out
 LEDOff(); //turn LED off at program start
 console.log('Running')
 
-//had problems with later commands, this makes sure camera os working
+//had problems with later commands, this makes sure camera is working
 var testCameraCommand = 'sudo raspistill -t 1000 -o photo.jpg -ex auto'; 
 exec(testCameraCommand, (err, stdout, stderr) => {
   if (err) {
@@ -54,7 +55,9 @@ button.watch((err, value) => {
           return;
         }
       });
-      return apiChain(imagePath)
+
+      // return apiChain(imagePath)
+      return musicbox(imagePath)
       .then(playMopidy)
     })
   } else {
@@ -102,26 +105,27 @@ function LEDGreen() {
   blueLED.writeSync(0);
 }
 
-async function getAlbumData(imagePath) {
-  try {
-    apiResponse = await apiChain(imagePath);
-    console.log('The album ID is ' + apiResponse.albumId);
-  } catch(e) {
-    apiResponse = {
-      error: true,
-      errorMessage: "API requests failed."
-    }
-  }
+// async function getAlbumData(imagePath) {
+//   try {
+//     apiResponse = await apiChain(imagePath);
+//     console.log('The album ID is ' + apiResponse.albumId);
+//   } catch(e) {
+//     apiResponse = {
+//       error: true,
+//       errorMessage: "API requests failed."
+//     }
+//   }
 
-  if (!apiResponse.error) {
-    var play = playMopidy(apiResponse.albumId);
-  } else {
-    console.log('Error: ' + apiResponse.errorMessage);
-  }
-}
+//   if (!apiResponse.error) {
+//     var play = playMopidy(apiResponse.albumId);
+//   } else {
+//     console.log('Error: ' + apiResponse.errorMessage);
+//   }
+// }
 
 async function playMopidy(data) {
-  var albumId = data.albumId;
+  // var albumId = data.albumId;
+  const albumId = data.spotifyId
   console.log('Now playing album');
   LEDOn();
   let command = `mpc clear; mpc add spotify:album:` + albumId + `; mpc play`;

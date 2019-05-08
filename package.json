@@ -7,14 +7,15 @@
     "start": "node index.js"
   },
   "dependencies": {
+    "axios": "^0.18.0",
     "child_process": "^1.0.2",
     "express": "^4.16.4",
-    "request": "^2.34.0",
-    "request-promise-native": "^1.0.5",
-    "request": "^2.88.0",
+    "form-data": "^2.3.3",
     "mopidy": "^1.0.0",
     "node-raspistill": "^0.0.16",
-    "onoff": "^3.2.2"
+    "onoff": "^3.2.2",
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.5"
   },
   "engines": {
     "node": "8.x"
