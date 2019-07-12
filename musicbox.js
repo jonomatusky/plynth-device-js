@@ -26,6 +26,8 @@ const musicbox = async (imagePath) => {
 
     const response = await request(options)
 
+    console.log('Now playing ' + response.album.name)
+
     const album = response.album
 
     return album
