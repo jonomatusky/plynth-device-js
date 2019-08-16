@@ -1,4 +1,4 @@
-const musicboxURL = 'http://musicbox.plynth.com/api/scans'
+const musicboxURL = 'http://app.plynth.com/api/scans'
 const fs = require('fs');
 const request = require('request-promise-native')
 

@@ -1,6 +1,4 @@
-const fs = require('fs');
-const apiChain = require('./apiChain');
-const Raspistill = require('node-raspistill').Raspistill;
+const Raspistill = require('node-raspistill').Raspistill
 const musicbox = require('./musicbox')
 const camera = new Raspistill({
   fileName: 'photo',
@@ -25,6 +23,8 @@ var redLED = new Gpio(17, 'out'); //use GPIO pin 14, and specify that it is outp
 var greenLED = new Gpio(27, 'out'); //use GPIO pin 15, and specify that it is output
 var blueLED = new Gpio(22, 'out'); //use GPIO pin 18, and specify that it is output
 
+var currentScan = 0
+
 LEDOff(); //turn LED off at program start
 console.log('Running')
 
@@ -37,11 +37,23 @@ exec(testCameraCommand, (err, stdout, stderr) => {
   }
 });
 
+// sets the volume to 100%
+var setVolume = 'sudo amixer set PCM -- 100%'
+exec(setVolume, (err, stdout, stderr) => {
+  if (err) {
+    console.error(`exec error: ${err}`);
+    return;
+  }
+});
+
 button.watch((err, value) => {
   if (err) {
     throw err;
   } 
   if (value === 1) { 
+    currentScan++
+    var scanId = currentScan
+
     console.log('Album On');
     LEDGreen(); //changes color to green
     camera.takePhoto()
@@ -56,9 +68,14 @@ button.watch((err, value) => {
         }
       });
 
-      // return apiChain(imagePath)
-      return musicbox(imagePath)
-      .then(playMopidy)
+      if (scanId === currentScan && button.readSync() === 1) {
+        // return apiChain(imagePath)
+        return musicbox(imagePath)
+        .then(playMopidy)
+      }
+
+      return
+      
     })
   } else {
     console.log('Album Off');
@@ -69,6 +86,7 @@ button.watch((err, value) => {
       }
     });
     LEDOff();
+    current_scan = 0
   }
 });
 
