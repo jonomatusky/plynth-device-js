@@ -51,14 +51,13 @@ button.watch((err, value) => {
     throw err;
   } 
   if (value === 1) { 
-    currentScan++
-    var scanId = currentScan
-
     console.log('Album On');
     LEDGreen(); //changes color to green
     camera.takePhoto()
-    .then((photo) => {
-      console.log('Photo Captured');
+    .then(() => {
+      console.log('Photo Captured')
+      currentScan++
+      var scanId = currentScan
       var fileName = 'photo' + Date.now() + '.jpg';
       var uploadCommand = '../Dropbox-Uploader/dropbox_uploader.sh upload ./resources/photo.jpg ./Plynth/Plynthv1-2' + fileName;
       exec(uploadCommand, (err, stdout, stderr) => {
@@ -66,7 +65,7 @@ button.watch((err, value) => {
           console.error(`exec error: ${err}`);
           return;
         }
-      });
+      })
 
       if (scanId === currentScan && button.readSync() === 1) {
         // return apiChain(imagePath)
@@ -121,6 +120,10 @@ function LEDGreen() {
   redLED.writeSync(0);
   greenLED.writeSync(1);
   blueLED.writeSync(0);
+}
+
+function uploadPhoto() {
+
 }
 
 // async function getAlbumData(imagePath) {
